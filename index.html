@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Co-Regulation Monitor — Teacher Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Source Sans 3', sans-serif; background: #F8FAFC; }
+    button { border: none; background: none; cursor: pointer; font-family: inherit; }
+    button:hover { transform: scale(1.05); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    .fade-in { animation: fadeIn 0.3s ease; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+// v3 dispersion is ordinal {1..5}; alignment and stability remain continuous [0,1].
+// Integer d values below are derived from the prior continuous values via
+// Math.round(1 + 4*d_continuous), preserving the ordering of students across
+// the dispersion ladder.
+const STUDENTS_INIT = [
+  { id: 1, name: "S01", a: 0.82, d: 2, s: 0.91 },
+  { id: 2, name: "S02", a: 0.74, d: 3, s: 0.85 },
+  { id: 3, name: "S03", a: 0.45, d: 4, s: 0.33 },
+  { id: 4, name: "S04", a: 0.91, d: 2, s: 0.88 },
+  { id: 5, name: "S05", a: 0.38, d: 4, s: 0.29 },
+  { id: 6, name: "S06", a: 0.67, d: 3, s: 0.76 },
+  { id: 7, name: "S07", a: 0.88, d: 2, s: 0.93 },
+  { id: 8, name: "S08", a: 0.53, d: 3, s: 0.48 },
+  { id: 9, name: "S09", a: 0.79, d: 2, s: 0.84 },
+  { id: 10, name: "S10", a: 0.41, d: 4, s: 0.37 },
+  { id: 11, name: "S11", a: 0.86, d: 2, s: 0.90 },
+  { id: 12, name: "S12", a: 0.62, d: 3, s: 0.59 },
+  { id: 13, name: "S13", a: 0.33, d: 4, s: 0.25 },
+  { id: 14, name: "S14", a: 0.71, d: 2, s: 0.80 },
+  { id: 15, name: "S15", a: 0.55, d: 3, s: 0.51 },
+  { id: 16, name: "S16", a: 0.93, d: 1, s: 0.95 },
+  { id: 17, name: "S17", a: 0.48, d: 4, s: 0.42 },
+  { id: 18, name: "S18", a: 0.76, d: 2, s: 0.87 },
+];
+
+// Helper: convert ordinal dispersion (1-5) to normalised [0,1] for gauge fill,
+// where the fill represents how far along the 1-5 ladder the value sits.
+const dToFill = (d) => (d - 1) / 4;
+
+const HISTORY_LEN = 20;
+
+function generateHistory(base) {
+  const h = [];
+  let v = { a: base.a, d: base.d, s: base.s };
+  for (let i = 0; i < HISTORY_LEN; i++) {
+    // alignment and stability: small random walk on [0, 1]
+    let newA = Math.max(0, Math.min(1, v.a + (Math.random() - 0.48) * 0.06));
+    let newS = Math.max(0, Math.min(1, v.s + (Math.random() - 0.48) * 0.06));
+    // dispersion: ordinal {1..5}; rarely jumps one rung up or down
+    let newD = v.d;
+    const dJump = Math.random();
+    if (dJump < 0.15)      newD = Math.max(1, v.d - 1);
+    else if (dJump > 0.85) newD = Math.min(5, v.d + 1);
+    v = { a: newA, d: newD, s: newS };
+    h.push({ ...v });
+  }
+  return h;
+}
+
+// State classification rule for v3: dispersion is ordinal {1..5}.
+// Convert to a normalised "good" component (low dispersion = good) via (5-d)/4.
+function getRegState(a, d, s) {
+  const dGood = (5 - d) / 4;  // d=1 -> 1.0 (best); d=5 -> 0.0 (worst)
+  const score = a * 0.4 + dGood * 0.3 + s * 0.3;
+  if (score >= 0.7) return { label: "On track", color: "#059669", bg: "#ECFDF5" };
+  if (score >= 0.45) return { label: "Drifting", color: "#D97706", bg: "#FFFBEB" };
+  return { label: "Needs support", color: "#DC2626", bg: "#FEF2F2" };
+}
+
+function GaugeRing({ value, label, color, lightColor, size = 64, displayValue, isInteger }) {
+  // value: 0-1 fill fraction (used for the ring sweep)
+  // displayValue: optional override for the text shown; if undefined, value is shown
+  // isInteger: if true, displayValue is shown without decimals
+  const r = (size - 8) / 2;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - value);
+  const shown = displayValue !== undefined ? displayValue : value;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={lightColor} strokeWidth={5} />
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={5}
+          strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
+          style={{ transition: "stroke-dashoffset 0.8s ease" }} />
+      </svg>
+      <span style={{ position: "relative", top: -(size/2 + 7), fontSize: 14, fontWeight: 700, color, fontFamily: "'JetBrains Mono', monospace" }}>
+        {isInteger ? Math.round(shown) : shown.toFixed(2)}
+      </span>
+      <span style={{ fontSize: 10, color: "#64748B", fontWeight: 600, letterSpacing: 0.5, marginTop: -(size/2 - 6) }}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function Sparkline({ data, color, width = 120, height = 28 }) {
+  if (!data || data.length < 2) return null;
+  const min = Math.min(...data) - 0.05;
+  const max = Math.max(...data) + 0.05;
+  const range = max - min || 1;
+  const points = data.map((v, i) =>
+    `${(i / (data.length - 1)) * width},${height - ((v - min) / range) * height}`
+  ).join(" ");
+  return (
+    <svg width={width} height={height} style={{ display: "block" }}>
+      <polyline points={points} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={width} cy={height - ((data[data.length-1] - min) / range) * height} r={2.5} fill={color} />
+    </svg>
+  );
+}
+
+function HeatCell({ student, selected, onClick }) {
+  const state = getRegState(student.a, student.d, student.s);
+  const isAlert = state.label === "Needs support";
+  return (
+    <button onClick={onClick} style={{
+      width: 56, height: 56, borderRadius: 10, border: selected ? `2.5px solid ${state.color}` : "1.5px solid #E2E8F0",
+      background: state.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      transition: "all 0.2s", position: "relative",
+      boxShadow: selected ? `0 0 0 3px ${state.color}22` : "0 1px 2px rgba(0,0,0,0.04)",
+    }}>
+      <span style={{ fontSize: 12, fontWeight: 700, color: state.color, fontFamily: "'JetBrains Mono', monospace" }}>{student.name}</span>
+      <span style={{ fontSize: 8, fontWeight: 600, color: state.color, opacity: 0.8, marginTop: 1 }}>{state.label}</span>
+      {isAlert && <span style={{ position: "absolute", top: -4, right: -4, width: 10, height: 10, borderRadius: "50%", background: "#DC2626", border: "2px solid white" }} />}
+    </button>
+  );
+}
+
+function Dashboard() {
+  const [students, setStudents] = useState(STUDENTS_INIT);
+  const [selected, setSelected] = useState(null);
+  const [histories, setHistories] = useState(() => {
+    const h = {};
+    STUDENTS_INIT.forEach(s => { h[s.id] = generateHistory(s); });
+    return h;
+  });
+  const [tick, setTick] = useState(0);
+  const [context, setContext] = useState("IW");
+  const [elapsed, setElapsed] = useState(2340);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    if (paused) return;
+    const interval = setInterval(() => {
+      setStudents(prev => prev.map(s => {
+        const newA = Math.max(0, Math.min(1, s.a + (Math.random() - 0.48) * 0.04));
+        const newS = Math.max(0, Math.min(1, s.s + (Math.random() - 0.48) * 0.04));
+        // dispersion: rare ordinal jump up or down by one rung
+        let newD = s.d;
+        const dJump = Math.random();
+        if (dJump < 0.06)      newD = Math.max(1, s.d - 1);
+        else if (dJump > 0.94) newD = Math.min(5, s.d + 1);
+        return { ...s, a: newA, d: newD, s: newS };
+      }));
+      setTick(t => t + 1);
+      setElapsed(e => e + 60);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [paused]);
+
+  useEffect(() => {
+    if (paused) return;
+    setHistories(prev => {
+      const next = { ...prev };
+      students.forEach(s => {
+        if (next[s.id]) {
+          next[s.id] = [...next[s.id].slice(1), { a: s.a, d: s.d, s: s.s }];
+        }
+      });
+      return next;
+    });
+  }, [tick]);
+
+  const alertCount = students.filter(s => getRegState(s.a, s.d, s.s).label === "Needs support").length;
+  const driftCount = students.filter(s => getRegState(s.a, s.d, s.s).label === "Drifting").length;
+  const onTrackCount = students.length - alertCount - driftCount;
+  const classA = students.reduce((sum, st) => sum + st.a, 0) / students.length;
+  const classD = students.reduce((sum, st) => sum + st.d, 0) / students.length;
+  const classS = students.reduce((sum, st) => sum + st.s, 0) / students.length;
+  const sel = selected ? students.find(s => s.id === selected) : null;
+
+  const formatTime = (secs) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
+  };
+
+  const contexts = ["IW", "PS", "Teaching"];
+  const contextLabels = { IW: "Individual Work", PS: "Problem Solving", Teaching: "Teaching" };
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#F8FAFC" }}>
+      {/* Header */}
+      <div style={{
+        background: "white", borderBottom: "1px solid #E2E8F0", padding: "12px 28px",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 9, height: 9, borderRadius: "50%", background: paused ? "#94A3B8" : "#059669",
+            animation: paused ? "none" : "pulse 2s infinite" }} />
+          <span style={{ fontSize: 19, fontWeight: 700, color: "#0F172A" }}>Co-Regulation Monitor</span>
+          <span style={{ fontSize: 11, color: paused ? "#94A3B8" : "#059669", fontWeight: 700, marginLeft: 4,
+            padding: "2px 8px", borderRadius: 4, background: paused ? "#F1F5F9" : "#ECFDF5" }}>
+            {paused ? "PAUSED" : "LIVE"}
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 16, alignItems: "center", fontSize: 13, color: "#64748B" }}>
+          <button onClick={() => setPaused(!paused)} style={{
+            fontSize: 12, fontWeight: 600, color: paused ? "#059669" : "#94A3B8",
+            padding: "4px 12px", borderRadius: 6, border: "1px solid #E2E8F0", background: "white",
+          }}>
+            {paused ? "▶ Resume" : "⏸ Pause"}
+          </button>
+          <span>Context: <strong style={{ color: "#2563EB" }}>{contextLabels[context]}</strong></span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", color: "#94A3B8" }}>Δ = 60 s</span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 700, color: "#0F172A" }}>
+            {formatTime(elapsed)}
+          </span>
+        </div>
+      </div>
+
+      <div style={{ padding: "18px 28px", display: "grid", gridTemplateColumns: "1fr 340px", gap: 18, maxWidth: 1280, margin: "0 auto" }}>
+        {/* Main area */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          {/* Class summary strip */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 14 }}>
+            {[
+              { label: "Alignment ā", value: classA, color: "#2563EB", light: "#DBEAFE", isOrdinal: false },
+              { label: "Dispersion d̄", value: classD, color: "#EA580C", light: "#FED7AA", isOrdinal: true },
+              { label: "Stability σ̄", value: classS, color: "#059669", light: "#D1FAE5", isOrdinal: false },
+            ].map((m, i) => (
+              <div key={i} style={{
+                background: "white", borderRadius: 12, padding: "16px 18px", border: "1px solid #E2E8F0",
+                display: "flex", alignItems: "center", gap: 14, boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+              }}>
+                {m.isOrdinal ? (
+                  <GaugeRing
+                    value={dToFill(m.value)}
+                    displayValue={m.value}
+                    isInteger={false}
+                    label={m.label}
+                    color={m.color}
+                    lightColor={m.light}
+                    size={58}
+                  />
+                ) : (
+                  <GaugeRing value={m.value} label={m.label} color={m.color} lightColor={m.light} size={58} />
+                )}
+                <Sparkline
+                  data={Array.from({ length: 14 }, (_, i) => {
+                    const base = m.isOrdinal ? dToFill(m.value) : m.value;
+                    return base + Math.sin(i * 0.5 + tick * 0.1) * 0.05 + (Math.random() - 0.5) * 0.02;
+                  })}
+                  color={m.color} width={85} height={26}
+                />
+              </div>
+            ))}
+            <div style={{
+              background: "white", borderRadius: 12, padding: "16px 18px", border: "1px solid #E2E8F0",
+              display: "flex", flexDirection: "column", justifyContent: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+            }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                <span style={{ fontSize: 30, fontWeight: 700, color: "#DC2626", fontFamily: "'JetBrains Mono', monospace" }}>{alertCount}</span>
+                <span style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>need support</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 4 }}>
+                <span style={{ fontSize: 22, fontWeight: 700, color: "#D97706", fontFamily: "'JetBrains Mono', monospace" }}>{driftCount}</span>
+                <span style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>drifting</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 2 }}>
+                <span style={{ fontSize: 16, fontWeight: 700, color: "#059669", fontFamily: "'JetBrains Mono', monospace" }}>{onTrackCount}</span>
+                <span style={{ fontSize: 11, color: "#94A3B8", fontWeight: 600 }}>on track</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Student heatmap grid */}
+          <div style={{
+            background: "white", borderRadius: 14, border: "1px solid #E2E8F0", padding: "20px 22px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "#0F172A" }}>Student State Grid</span>
+              <div style={{ display: "flex", gap: 14, fontSize: 11, color: "#64748B" }}>
+                {[["On track", "#059669", "#ECFDF5"], ["Drifting", "#D97706", "#FFFBEB"], ["Needs support", "#DC2626", "#FEF2F2"]].map(([lbl, col, bg]) => (
+                  <span key={lbl} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <span style={{ width: 11, height: 11, borderRadius: 3, background: bg, border: `1.5px solid ${col}` }} />
+                    {lbl}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {students.map(s => (
+                <HeatCell key={s.id} student={s} selected={selected === s.id} onClick={() => setSelected(selected === s.id ? null : s.id)} />
+              ))}
+            </div>
+          </div>
+
+          {/* Bubble scatter */}
+          <div style={{
+            background: "white", borderRadius: 14, border: "1px solid #E2E8F0", padding: "20px 22px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+          }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 10 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "#0F172A" }}>Alignment × Dispersion</span>
+              <span style={{ fontSize: 12, color: "#94A3B8" }}>(bubble size = Stability)</span>
+            </div>
+            <svg width="100%" viewBox="0 0 520 240" style={{ overflow: "visible" }}>
+              <line x1={50} y1={210} x2={510} y2={210} stroke="#CBD5E1" strokeWidth={1} />
+              <line x1={50} y1={10} x2={50} y2={210} stroke="#CBD5E1" strokeWidth={1} />
+              <text x={280} y={236} textAnchor="middle" fontSize={11} fill="#64748B" fontFamily="Source Sans 3, sans-serif">Alignment (a)</text>
+              <text x={16} y={115} textAnchor="middle" fontSize={11} fill="#64748B" fontFamily="Source Sans 3, sans-serif" transform="rotate(-90 16 115)">Dispersion (d)</text>
+              {/* Alignment X-axis ticks (continuous 0-1) */}
+              {[0, 0.25, 0.5, 0.75, 1].map(v => (
+                <g key={`x-${v}`}>
+                  <line x1={50 + v * 460} y1={210} x2={50 + v * 460} y2={10} stroke="#F1F5F9" strokeWidth={1} />
+                  <text x={50 + v * 460} y={224} textAnchor="middle" fontSize={9} fill="#94A3B8" fontFamily="JetBrains Mono, monospace">{v.toFixed(2)}</text>
+                </g>
+              ))}
+              {/* Dispersion Y-axis ticks (ordinal 1-5) */}
+              {[1, 2, 3, 4, 5].map(v => {
+                const y = 210 - ((v - 1) / 4) * 200;
+                return (
+                  <g key={`y-${v}`}>
+                    <line x1={50} y1={y} x2={510} y2={y} stroke="#F1F5F9" strokeWidth={1} />
+                    <text x={44} y={y + 4} textAnchor="end" fontSize={9} fill="#94A3B8" fontFamily="JetBrains Mono, monospace">{v}</text>
+                  </g>
+                );
+              })}
+              {/* Needs-support zone: low alignment + high dispersion (top-left) */}
+              <rect x={50} y={10} width={230} height={100} fill="#FEF2F2" opacity={0.5} rx={4} />
+              <text x={165} y={56} textAnchor="middle" fontSize={10} fill="#DC2626" opacity={0.5} fontWeight={600} fontFamily="Source Sans 3, sans-serif">Needs support zone</text>
+              {students.map(s => {
+                const state = getRegState(s.a, s.d, s.s);
+                // Deterministic jitter (per-student seed) to disambiguate bubbles that
+                // share the same integer dispersion or near-identical alignment values.
+                // Jitter is small (within visual neighbourhood) and stable per student.
+                const seed = (s.id * 9301 + 49297) % 233280;
+                const jitterY = ((seed / 233280) - 0.5) * 24;     // ±12 px around the integer level
+                const jitterX = (((seed * 7) % 233280) / 233280 - 0.5) * 8;  // small x jitter
+                const cx = 50 + s.a * 460 + jitterX;
+                const cy = 210 - ((s.d - 1) / 4) * 200 + jitterY;
+                const r = 5 + s.s * 14;
+                const isSel = selected === s.id;
+                return (
+                  <g key={s.id} onClick={() => setSelected(selected === s.id ? null : s.id)} style={{ cursor: "pointer" }}>
+                    <circle cx={cx} cy={cy} r={r} fill={state.color} opacity={0.3}
+                      stroke={state.color} strokeWidth={isSel ? 2.5 : 0.8}
+                      style={{ transition: "all 0.3s" }} />
+                    <text x={cx} y={cy + 4} textAnchor="middle" fontSize={9} fill={state.color}
+                      fontWeight={700} fontFamily="JetBrains Mono, monospace">{s.name}</text>
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+        </div>
+
+        {/* Right sidebar */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <div style={{
+            background: "white", borderRadius: 14, border: "1px solid #E2E8F0", padding: "22px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.04)", minHeight: 380,
+          }}>
+            {sel ? (() => {
+              const state = getRegState(sel.a, sel.d, sel.s);
+              const hist = histories[sel.id] || [];
+              return (
+                <div className="fade-in">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+                    <span style={{ fontSize: 22, fontWeight: 700, color: "#0F172A", fontFamily: "'JetBrains Mono', monospace" }}>{sel.name}</span>
+                    <span style={{
+                      fontSize: 12, fontWeight: 700, color: state.color, background: state.bg,
+                      padding: "4px 12px", borderRadius: 20, border: `1.5px solid ${state.color}33`,
+                    }}>{state.label}</span>
+                  </div>
+
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", marginBottom: 8, letterSpacing: 1 }}>
+                    REGULATORY STATE VECTOR
+                  </div>
+                  <div style={{
+                    fontFamily: "'JetBrains Mono', monospace", fontSize: 13.5, color: "#334155",
+                    background: "#F8FAFC", padding: "10px 14px", borderRadius: 8, marginBottom: 20,
+                    border: "1px solid #E2E8F0",
+                  }}>
+                    <strong>s</strong><sub style={{ fontSize: 10 }}>t</sub> = ({sel.a.toFixed(3)}, {sel.d}, {sel.s.toFixed(3)})
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "space-around", marginBottom: 24 }}>
+                    <GaugeRing value={sel.a} label="a" color="#2563EB" lightColor="#DBEAFE" size={62} />
+                    <GaugeRing value={dToFill(sel.d)} displayValue={sel.d} isInteger={true} label="d" color="#EA580C" lightColor="#FED7AA" size={62} />
+                    <GaugeRing value={sel.s} label="σ" color="#059669" lightColor="#D1FAE5" size={62} />
+                  </div>
+
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", marginBottom: 10, letterSpacing: 1 }}>
+                    TRAJECTORY (LAST {HISTORY_LEN} WINDOWS)
+                  </div>
+                  {[
+                    { key: "a", label: "Alignment", color: "#2563EB", isOrdinal: false },
+                    { key: "d", label: "Dispersion", color: "#EA580C", isOrdinal: true },
+                    { key: "s", label: "Stability", color: "#059669", isOrdinal: false },
+                  ].map(dim => (
+                    <div key={dim.key} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                      <span style={{ fontSize: 11, width: 65, color: dim.color, fontWeight: 700 }}>{dim.label}</span>
+                      <Sparkline
+                        data={hist.map(h => dim.isOrdinal ? dToFill(h[dim.key]) : h[dim.key])}
+                        color={dim.color} width={220} height={22}
+                      />
+                    </div>
+                  ))}
+
+                  {state.label === "Needs support" && (
+                    <div style={{
+                      marginTop: 18, background: "#FEF2F2", border: "1px solid #FECACA",
+                      borderRadius: 10, padding: "12px 16px", fontSize: 12.5, color: "#991B1B", lineHeight: 1.6,
+                    }}>
+                      <strong>Suggested action:</strong> High dispersion (d<sub>t</sub> = {sel.d}) with low alignment (a<sub>t</sub> = {sel.a.toFixed(2)}) indicates scattered, off-task activity. Consider a check-in or scaffolding prompt.
+                    </div>
+                  )}
+                  {state.label === "Drifting" && (
+                    <div style={{
+                      marginTop: 18, background: "#FFFBEB", border: "1px solid #FDE68A",
+                      borderRadius: 10, padding: "12px 16px", fontSize: 12.5, color: "#92400E", lineHeight: 1.6,
+                    }}>
+                      <strong>Monitor:</strong> Stability declining — engagement pattern becoming irregular. May benefit from a gentle redirect.
+                    </div>
+                  )}
+                  {state.label === "On track" && (
+                    <div style={{
+                      marginTop: 18, background: "#ECFDF5", border: "1px solid #A7F3D0",
+                      borderRadius: 10, padding: "12px 16px", fontSize: 12.5, color: "#065F46", lineHeight: 1.6,
+                    }}>
+                      <strong>Status:</strong> Focused and stable engagement pattern. No intervention needed.
+                    </div>
+                  )}
+                </div>
+              );
+            })() : (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 340, color: "#94A3B8" }}>
+                <svg width={44} height={44} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
+                </svg>
+                <span style={{ fontSize: 14, marginTop: 10, fontWeight: 500 }}>Select a student to inspect</span>
+                <span style={{ fontSize: 12, marginTop: 4, color: "#CBD5E1" }}>Click any tile or bubble</span>
+              </div>
+            )}
+          </div>
+
+          {/* Notation reference */}
+          <div style={{
+            background: "white", borderRadius: 14, border: "1px solid #E2E8F0", padding: "18px 20px",
+            fontSize: 12, color: "#64748B", lineHeight: 1.85, boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+          }}>
+            <div style={{ fontWeight: 700, color: "#0F172A", marginBottom: 8, fontSize: 13 }}>Notation</div>
+            <div><strong style={{ color: "#2563EB" }}>a<sub>t</sub></strong> — Alignment (4-channel composite: C<sub>e</sub>, C<sub>c</sub>, Q<sub>sub</sub>, T<sub>sust</sub>)</div>
+            <div><strong style={{ color: "#EA580C" }}>d<sub>t</sub></strong> — Dispersion (cascade-bundled event-type ladder, ordinal {"{1..5}"})</div>
+            <div><strong style={{ color: "#059669" }}>σ<sub>t</sub></strong> — Stability (4-channel composite: S<sub>a</sub>, S<sub>u</sub>, S<sub>e</sub>, S<sub>τ</sub>)</div>
+            <div style={{ marginTop: 8, borderTop: "1px solid #E2E8F0", paddingTop: 8, fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>
+              <strong>s<sub>t</sub></strong> = (a<sub>t</sub>, d<sub>t</sub>, σ<sub>t</sub>);  a<sub>t</sub>, σ<sub>t</sub> ∈ [0, 1];  d<sub>t</sub> ∈ {"{1, 2, 3, 4, 5}"}
+            </div>
+          </div>
+
+          {/* Info note */}
+          <div style={{
+            background: "#F8FAFC", borderRadius: 10, border: "1px dashed #CBD5E1", padding: "14px 16px",
+            fontSize: 11, color: "#94A3B8", lineHeight: 1.7, textAlign: "center",
+          }}>
+            Interactive prototype with simulated data.<br/>
+            Data updates every 3 seconds to demonstrate real-time behaviour.<br/>
+            <span style={{ color: "#64748B", fontWeight: 600 }}>© 2026 — Human-in-the-loop co-regulation analytics</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Dashboard />);
+</script>
+</body>
+</html>
