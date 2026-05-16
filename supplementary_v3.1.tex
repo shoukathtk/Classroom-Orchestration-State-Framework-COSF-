@@ -1,0 +1,243 @@
+% ===========================================================================
+% supplementary_v3.tex — Online Supplementary Materials
+%
+% Consolidates content from former appendix_a_v3.tex and appendix_b_v3.tex
+% into a single Elsevier-style supplementary materials file.
+%
+% Numbering convention: S1, S2 (standard for online supplementary materials).
+% Cross-references in the main article point to "the online supplementary
+% materials" without specific section/figure references; readers locate the
+% content via the S1/S2 section headings in this file.
+%
+% This file is intended for submission as a separate supplementary file.
+% It does NOT count toward the main article's published page count.
+%
+% Style: elsarticle, authoryear citations, UK English
+% ===========================================================================
+
+\documentclass[preprint,12pt,authoryear]{elsarticle}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{natbib}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage[a4paper,
+  left=1.2cm,
+  right=1.2cm,
+  top=1.5cm,
+  bottom=1.5cm
+]{geometry}
+\usepackage[
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+]{hyperref}
+
+%% Figure files are located in the figures/ subdirectory.
+\graphicspath{{figures/}}
+
+\begin{document}
+
+\begin{center}
+{\Large \textbf{Online Supplementary Materials}}\\[4pt]
+{\large Modelling Classroom Co-Regulation from LMS Interaction Logs:\\
+A Validated Trivariate State Framework for Real-Time Teacher Orchestration}\\[8pt]
+\end{center}
+
+\vspace{1em}
+
+% ===========================================================================
+% S1. Annotation Handbook
+% ===========================================================================
+
+\section*{S1. Annotation Handbook}
+\label{supp:annotation}
+
+This supplementary section provides the full annotation handbook referenced in Section~4.4 of the main article, including the four protocol rule cards in tabular form, the calibration procedure, illustrative cases constructed to demonstrate protocol application, and rating distributions on the $N = 400$ annotated sample. The protocols below are reproduced in the form used during calibration; final ratings reflected structured expert judgement guided by these references rather than deterministic procedural application, as discussed in Section~4.4 of the main article.
+
+\subsection*{S1.1. Annotation rule cards}
+\label{supp:annotation-rules}
+
+Tables~\ref{tab:annot-alignment}--\ref{tab:annot-action} collect the reference thresholds and decision aids used during annotation. The four protocols share a common form: each provides indicative anchors that orient rater judgement, but raters were instructed to integrate evidence holistically rather than to apply the rules deterministically.
+
+\begin{table}[h]
+\centering
+\caption{Alignment protocol rule card. The four-element evidence structure parallels the four channels of the alignment proxy (Section~4.3 of the main article). Annotators integrated evidence across all four elements, with the cascade-bundled event-type concentration ($C_e$) providing the initial anchor.}
+\label{tab:annot-alignment}
+\begin{tabular}{lp{8cm}}
+\hline
+Evidence element & Reference threshold \\
+\hline
+(1) Event-type concentration $C_e$ & $\geq 0.90 \to 5$; $0.75$--$0.89 \to 4$; $0.50$--$0.74 \to 3$; $0.30$--$0.49 \to 2$; $< 0.30 \to 1$ \\
+(2) Component-level corroboration $C_c$ & Agreement within $\pm 0.10$ of $C_e$: preserve rating. Divergence $> 0.20$: anchor to higher-concentration channel. \\
+(3) Substantive vs.\ generic activity & Substantive (learning task): preserve rating. Generic (navigation, idle): weaken by 1 level. \\
+(4) Temporal sustainment & Both adjacent windows match dominant activity: strengthen by 1. One matches: preserve. Neither matches: weaken by 1. \\
+\hline
+\multicolumn{2}{l}{\textit{Final rating bounded to $\{1, 2, 3, 4, 5\}$.}} \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Dispersion protocol rule card. Annotators counted distinct activity-type families after cascade bundling and mapped the count to the 1--5 ordinal scale.}
+\label{tab:annot-dispersion}
+\begin{tabular}{lc}
+\hline
+Distinct activity types $K$ & Rating \\
+\hline
+1 & 1 \\
+2 & 2 \\
+3 & 3 \\
+4 & 4 \\
+$\geq 5$ & 5 \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Stability protocol rule card. Three continuity checks orient the rating; mild-versus-sharp change distinguishes the two lower categories. End-of-session participation decay with preserved task focus was rated as a stable tapering process rather than as a regulatory rupture.}
+\label{tab:annot-stability}
+\begin{tabular}{lp{8cm}}
+\hline
+Continuity check & Anchor \\
+\hline
+(1) Prior-window match & Dominant activity and active-user count match prior window. \\
+(2) Next-window match & Dominant activity and active-user count match next window. \\
+(3) Temporal continuity & Timestamps continuous between retained windows. \\
+\hline
+Number of affirmative checks & Rating \\
+\hline
+3 affirmatives & 5 \\
+2 affirmatives & 4 \\
+1 affirmative & 3 \\
+0 affirmatives, mild between-window changes & 2 \\
+0 affirmatives, sharp between-window changes & 1 \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Action protocol rule card. The six instructional action categories and indicative state combinations that guided selection. Annotators applied professional judgement for ambiguous or boundary conditions; the indicative state column is descriptive rather than prescriptive.}
+\label{tab:annot-action}
+\begin{tabular}{lp{7cm}}
+\hline
+Action category & Indicative state combination \\
+\hline
+\textit{monitor} & High alignment, low dispersion, high stability: class operating coherently; no intervention needed. \\
+\textit{whole\_class\_prompt} & Moderate alignment, moderate dispersion: brief refocusing nudge may help reconverge attention. \\
+\textit{clarify\_instruction} & Low alignment, high dispersion, low stability: signs of widespread misinterpretation of the task. \\
+\textit{pacing\_adjust} & High alignment, moderate dispersion, declining stability: pacing mismatch between class and task. \\
+\textit{target\_subgroup} & High overall alignment, asymmetric participation: a subset of students drifting while majority on task. \\
+\textit{pause\_and\_reset} & Low alignment, high dispersion, sharply low stability: regulatory rupture; full reset warranted. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection*{S1.2. Calibration procedure}
+\label{supp:annotation-calibration}
+
+A half-day calibration session preceded independent annotation. The session was structured in five blocks: (1)~a 45-minute walk-through of construct definitions, the rule cards above, and worked examples; (2)~a 90-minute first-pass independent annotation of 25 calibration windows drawn from the corpus but disjoint from the main 400-window task; (3)~a 60-minute facilitated discussion of disagreements, with consensus reasoning recorded for each discussed window; (4)~a 60-minute re-annotation of the 25 calibration windows; (5)~a qualification check requiring each annotator to show pairwise Pearson $r \geq 0.70$ with at least three of the other three annotators on each dimension. All four annotators met the qualification criterion. The calibration discussion focused particularly on boundary cases: the substantive-versus-generic distinction for the alignment protocol, the count-versus-bundle decision for the dispersion protocol, and the mild-versus-sharp change distinction for the stability protocol.
+
+\subsection*{S1.3. Illustrative cases}
+\label{supp:annotation-illustrative}
+
+The cases below are \textit{illustrative cases constructed to demonstrate protocol application}. They are not drawn from the empirical corpus; they are synthesised to show how the four protocols integrate evidence in characteristic situations. Empirical rating distributions across the $N = 400$ annotated windows are reported separately in Section~S1.4 below.
+
+\paragraph{Illustrative case A: high alignment in a problem-solving context.}
+A 60-second window during a problem-solving session shows 12 active users, with 11 of 12 producing events on a single quiz-attempt activity (after cascade bundling collapses the underlying logging cascade into one event type). The dominant Moodle component is \texttt{mod\_quiz}; the second-most-frequent event type accounts for 4\% of events. Both the prior and next windows share the same dominant activity and active-user count.
+
+\textit{Protocol application:} Event-type concentration $C_e \approx 0.96$ places the alignment ladder anchor at rating~5. Component-level concentration $C_c \approx 0.96$ corroborates within $\pm 0.10$, so the rating stands. The dominant activity is substantive (quiz attempts on a problem-solving task), so the rating is preserved. Temporal sustainment: both adjacent windows match, strengthening by 1 --- capped at the ceiling. \textbf{Alignment rating: 5.} Dispersion count: 1 distinct activity type, mapping to \textbf{dispersion rating: 1}. Stability: all three continuity checks affirmative, mapping to \textbf{stability rating: 5}. Indicative action: \textit{monitor}.
+
+\paragraph{Illustrative case B: moderate alignment with end-of-session decay.}
+A 60-second window late in an independent-work session shows 6 active users (down from 11 in the prior window), distributed across 3 activity types after cascade bundling: file views (42\%), forum reads (33\%), and assignment-page views (25\%). The dominant activity (file views) is generic navigation rather than a substantive learning task. The prior window had the same dominant activity but with 11 users; the next window shows 4 users and a different dominant activity (forum reads). Timestamps are continuous.
+
+\textit{Protocol application:} Event-type concentration $C_e \approx 0.42$ places the alignment ladder anchor at rating~2. Component-level concentration is close to $C_e$, so the rating stands. The dominant activity is generic (file viewing without substantive engagement), weakening the rating by 1 to rating~1. Temporal sustainment: prior window matches dominant activity, next does not --- one match, so the rating stands. \textbf{Alignment rating: 1.} Dispersion: 3 distinct activity types, mapping to \textbf{dispersion rating: 3}. Stability checks: prior match yes (dominant activity), next match no, temporal continuity yes; 2 affirmatives total. But the participation drop from 11 to 6 to 4 is a sharp change --- annotator judgement may downgrade from rating~4 toward rating~3 given the declining engagement, though the end-of-session decay rule (preserved task focus with declining participation rated as stable tapering) provides counter-pressure. \textbf{Stability rating: 3 (annotator judgement at boundary).} Indicative action: \textit{clarify\_instruction} or \textit{pause\_and\_reset} depending on session timing.
+
+\paragraph{Illustrative case C: stable navigation context.}
+A 60-second window in a navigation context shows 8 active users distributed across 5 activity types: home page (28\%), course main page (24\%), resource list (20\%), grade book (16\%), profile page (12\%). The dominant activity is generic navigation. Prior and next windows show similar distributional patterns with the same five activity types in slightly shuffled proportions.
+
+\textit{Protocol application:} Event-type concentration $C_e \approx 0.28$ places the alignment ladder anchor at rating~1. Component concentration agrees. Dominant activity is generic, but the rating is already at the floor and cannot be weakened further. Temporal sustainment: both adjacent windows broadly match the distributional pattern (though no single dominant activity matches strictly), so annotator judgement may apply +1 or hold at floor. \textbf{Alignment rating: 1.} Dispersion: 5 distinct activity types, mapping to \textbf{dispersion rating: 5}. Stability: dominant-activity match is ambiguous because navigation does not have a clear single dominant activity; activity-type continuity is high (same five types present), but the strict prior-match and next-match checks are weak. Annotator judgement integrates the consistent distributional pattern across windows and rates this as \textbf{stability rating: 4 (consistent navigation patterning across windows).} Indicative action: \textit{monitor} (low coordination demand) or \textit{whole\_class\_prompt} (to redirect to substantive activity).
+
+\subsection*{S1.4. Rating distributions on the annotated sample}
+\label{supp:annotation-distributions}
+
+Table~\ref{tab:annot-distributions} reports the rating distributions across the $N = 400$ annotated windows for each dimension and the action recommendation. These are aggregated across all four raters (i.e., counts shown are out of $400 \times 4 = 1600$ rating events per dimension).
+
+\begin{table}[h]
+\centering
+\caption{Rating distributions across the $N = 400$ annotated sample, aggregated across all four raters. Counts are out of 1{,}600 rating events per dimension (400 windows $\times$ 4 raters).}
+\label{tab:annot-distributions}
+\begin{tabular}{lccccc}
+\hline
+Dimension & Rating 1 & Rating 2 & Rating 3 & Rating 4 & Rating 5 \\
+\hline
+Alignment & 12 & 45 & 264 & 498 & 781 \\
+Dispersion & 15 & 143 & 826 & 580 & 36 \\
+Stability & 136 & 439 & 641 & 303 & 81 \\
+\hline
+\multicolumn{6}{l}{\textit{Action recommendation counts (six categories):}} \\
+\hline
+\multicolumn{2}{l}{\textit{monitor}: 539} & \multicolumn{2}{l}{\textit{whole\_class\_prompt}: 113} & \multicolumn{2}{l}{\textit{clarify\_instruction}: 58} \\
+\multicolumn{2}{l}{\textit{pacing\_adjust}: 336} & \multicolumn{2}{l}{\textit{target\_subgroup}: 523} & \multicolumn{2}{l}{\textit{pause\_and\_reset}: 31} \\
+\hline
+\end{tabular}
+\end{table}
+
+The validation analyses reported in Section~5 of the main article use the four-rater consensus mean for each window-dimension pair; the consensus distribution mirrors the per-rater distributions reported above with reduced variance and quarter-integer increments arising from the 4-rater averaging.
+
+\vspace{2em}
+
+% ===========================================================================
+% S2. Action Agreement Supplementary Materials
+% ===========================================================================
+
+\section*{S2. Action Agreement Supplementary Materials}
+\label{supp:action}
+
+This supplementary section provides the full action co-occurrence matrix referenced in Sections~4.5 and~5.4 of the main article. The action protocol assigned one of six instructional action recommendations to each window: \textit{monitor}, \textit{whole\_class\_prompt}, \textit{clarify\_instruction}, \textit{pacing\_adjust}, \textit{target\_subgroup}, and \textit{pause\_and\_reset}. The action recommendation was rated independently of the three regulatory dimensions and constitutes a downstream judgement informed by but not deterministically derived from the trivariate state proxies.
+
+\subsection*{S2.1. Overall agreement statistics}
+\label{supp:action-overall}
+
+Inter-rater agreement on the action recommendation, aggregated across the $N = 400$ annotated windows and four fully-crossed raters, achieved Fleiss' $\kappa = .686$ across the six action categories~\citep{landis1977}. All four raters agreed on the recommended action in $73.0\%$ of windows; at least three of four raters agreed in $89.0\%$ of windows. By Landis-Koch benchmarks~\citep{landis1977}, this constitutes substantial agreement on a six-category instructional judgement task.
+
+\subsection*{S2.2. Action co-occurrence matrix}
+\label{supp:action-matrix}
+
+Figure~\ref{fig:action_confusion} shows the full $6 \times 6$ action co-occurrence matrix, computed as the count of rater-pair (window) instances in which one rater chose row category $i$ and another rater chose column category $j$, summed across all $\binom{4}{2} = 6$ rater pairs and all 400 windows. Row-normalised proportions show within-row agreement and patterns of systematic substitution.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{fig4_action_confusion}
+  \caption{Six-by-six action co-occurrence matrix across the four-rater fully-crossed annotation panel, row-normalised within each row category.}
+  \label{fig:action_confusion}
+\end{figure}
+
+\subsection*{S2.3. Substitution patterns}
+\label{supp:action-patterns}
+
+The matrix reveals systematic substitution patterns rather than diffuse confusion across categories. Two categories show high within-row agreement: \textit{monitor} and \textit{whole\_class\_prompt} both have row-normalised diagonals above $87\%$, indicating that when one rater selected either of these actions, the modal choice of the other raters was the same action. These two categories sit at the low-intervention end of the action taxonomy, where the regulatory state evidence is relatively unambiguous.
+
+The principal off-diagonal pattern involves \textit{pacing\_adjust}, which is confused with \textit{monitor} in $69\%$ of cases. This boundary admits substantial interpretive variability: distinguishing between a class operating coherently (warranting \textit{monitor}) and a class operating coherently but at a pace mismatched with the task (warranting \textit{pacing\_adjust}) requires a judgement about the intended task timing that is not fully recoverable from the LMS log evidence alone. The action protocol acknowledges this boundary explicitly (Section~S1.1, Table~\ref{tab:annot-action}) and instructs annotators to apply professional judgement.
+
+Other off-diagonal entries are smaller in magnitude and do not exhibit the same systematic pattern. The \textit{clarify\_instruction}, \textit{target\_subgroup}, and \textit{pause\_and\_reset} categories show within-row agreement in the $60$--$75\%$ range with no single dominant confusion partner, suggesting that disagreements on these categories reflect distributed interpretive variability rather than a specific boundary admitting systematic confusion.
+
+\subsection*{S2.4. Implications for action validation}
+\label{supp:action-implications}
+
+The substantial overall $\kappa$ combined with the localised \textit{pacing\_adjust}--\textit{monitor} confusion has two implications for future validation work. First, the action taxonomy is broadly reproducible at the all-four agreement level ($73\%$), supporting its use as a candidate action vocabulary for downstream decision-support systems built atop the validated state representation. Second, the specific \textit{pacing\_adjust}--\textit{monitor} boundary warrants either taxonomic refinement (e.g., introducing an intermediate category for pace-monitoring) or explicit decision-support guidance to teachers about how to distinguish the two situations in practice. The latter is the more conservative path, preserving the six-category structure validated here while acknowledging the interpretive boundary in deployment-time guidance.
+
+\bibliographystyle{elsarticle-harv}
+\bibliography{references}
+
+\end{document}
